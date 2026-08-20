@@ -2,7 +2,7 @@
 
 > 一个基于 Go + Vue 3 的轻量级 PXE / iPXE 网络启动管理平台。
 
-`mboot` 用于集中管理服务器、物理机和虚拟机的网络启动环境，集成 DHCP / ProxyDHCP、TFTP、HTTP Boot、iPXE 动态菜单、客户端管理、启动文件管理以及 netboot.xyz。
+`mboot` 用于集中管理服务器、物理机和虚拟机的网络启动环境，集成 DHCP / ProxyDHCP、TFTP、HTTP Boot、iPXE 动态菜单、设备管理、IPMI/BMC 控制器、启动文件管理以及 netboot.xyz。
 
 项目面向服务器批量装机、实验室网络启动、数据中心裸机部署和离线操作系统安装场景。
 
@@ -46,7 +46,12 @@
 * HTTP Range 请求
 * 动态 iPXE 菜单
 * netboot.xyz 集成
-* PXE 客户端管理
+* 物理机 / 虚拟机统一设备管理
+* DHCP / iPXE 动态地址关联
+* IPMI / BMC 信息探测
+* IPMI 电源状态与安全控制
+* PXE / 本地硬盘一次性启动覆盖
+* Legacy BIOS / UEFI 启动模式选择
 * 启动菜单管理
 * HTTP / TFTP 文件管理
 * 实时日志
@@ -56,6 +61,26 @@
 * SQLite 配置存储
 * SSE 实时事件
 * 单二进制部署
+
+### 设备与控制器模型
+
+```text
+设备（物理机或虚拟机）
+  ├── PXE 网卡 MAC
+  ├── DHCP 当前 IP
+  ├── 固件与启动记录
+  └── 控制器
+       ├── IPMI / BMC（已支持）
+       └── VMware / Proxmox / libvirt / Hyper-V（待适配）
+```
+
+设备使用稳定的设备 ID 和 PXE MAC 跟踪动态 DHCP 地址；控制器通过 `device_id` 与设备关联。BMC 地址和业务网 DHCP 地址相互独立，不能使用 IP 直接推断关联关系。
+
+当前 IPMI 控制器支持 BMC 信息、Power、一次性 Boot Override，以及标准 Boot Parameter 5 读取。完整 BIOS 属性不属于 IPMI 标准，需要对应服务器厂商的 OEM 适配器。
+
+运行 IPMI 功能前，需要在 mboot 主机安装 `ipmitool` 并加入 `PATH`。推荐使用 `lanplus`（IPMI 2.0）；`lan` 仅用于兼容 IPMI 1.5 旧设备。
+
+详细说明参见 [docs/ipmi.md](docs/ipmi.md)。
 
 ---
 
@@ -2031,9 +2056,9 @@ PXE
  │
  ├── Hardware Inventory
  │
- ├── BMC / Redfish
+ ├── Redfish / 厂商 BIOS OEM 适配
  │
- ├── IPMI Power Control
+ ├── VMware / Proxmox / libvirt / Hyper-V 控制器
  │
  ├── Kickstart
  │
