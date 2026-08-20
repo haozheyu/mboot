@@ -611,6 +611,7 @@ import {
 import {
   Activity,
   CircleAlert,
+	Cpu,
   ExternalLink,
   Eye,
   EyeOff,
@@ -673,6 +674,11 @@ const nav = [
     path: '/actions',
     name: '操作菜单',
     icon: TerminalSquare
+  },
+  {
+    path: '/ipmi',
+    name: 'IPMI 带外管理',
+    icon: Cpu
   },
   {
     path: '/users',

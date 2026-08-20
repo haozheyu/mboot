@@ -12,6 +12,7 @@ import LogsPage from './pages/LogsPage.vue'
 import DiagnosticsPage from './pages/DiagnosticsPage.vue'
 import UsersPage from './pages/UsersPage.vue'
 import ActionsPage from './pages/ActionsPage.vue'
+import IPMIPage from './pages/IPMIPage.vue'
 import './styles/main.css'
 
 const router = createRouter({
@@ -24,6 +25,7 @@ const router = createRouter({
     { path: '/files', component: FilesPage },
     { path: '/netboot', component: NetbootPage },
     { path: '/actions', component: ActionsPage },
+    { path: '/ipmi', component: IPMIPage },
     { path: '/users', component: UsersPage },
     { path: '/logs', component: LogsPage },
     { path: '/diagnostics', component: DiagnosticsPage }

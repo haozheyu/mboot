@@ -58,6 +58,7 @@ func (s *Store) Migrate(ctx context.Context) error {
 		`CREATE TABLE IF NOT EXISTS boot_menu_items (id INTEGER PRIMARY KEY, menu_id INTEGER NOT NULL, sort_order INTEGER NOT NULL, title TEXT NOT NULL, boot_file TEXT, pxe_type TEXT, server_ip TEXT, enabled INTEGER NOT NULL DEFAULT 1, FOREIGN KEY(menu_id) REFERENCES boot_menus(id) ON DELETE CASCADE);`,
 		`CREATE TABLE IF NOT EXISTS client_actions (id INTEGER PRIMARY KEY, sort_order INTEGER NOT NULL, name TEXT NOT NULL, command TEXT NOT NULL, args TEXT NOT NULL, enabled INTEGER NOT NULL DEFAULT 1);`,
 		`CREATE TABLE IF NOT EXISTS events (id INTEGER PRIMARY KEY, ts TEXT NOT NULL, level TEXT NOT NULL, source TEXT NOT NULL, message TEXT NOT NULL, fields_json TEXT);`,
+		`CREATE TABLE IF NOT EXISTS ipmi_nodes (id INTEGER PRIMARY KEY, client_id INTEGER, name TEXT NOT NULL, address TEXT UNIQUE NOT NULL, username TEXT NOT NULL, password TEXT NOT NULL, interface TEXT NOT NULL DEFAULT 'lanplus', vendor TEXT NOT NULL DEFAULT 'generic', created_at TEXT NOT NULL, updated_at TEXT NOT NULL, FOREIGN KEY(client_id) REFERENCES clients(id) ON DELETE SET NULL);`,
 	}
 	for _, stmt := range stmts {
 		if _, err := s.db.ExecContext(ctx, stmt); err != nil {

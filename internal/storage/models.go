@@ -97,6 +97,39 @@ type Client struct {
 	UpdatedAt    string `json:"updated_at"`
 }
 
+// IPMINode is the server-side configuration for a machine's out-of-band
+// management controller. Password is accepted on writes but never returned by
+// the HTTP API (see PublicIPMINode).
+type IPMINode struct {
+	ID        int64  `json:"id"`
+	ClientID  int64  `json:"client_id"`
+	Name      string `json:"name"`
+	Address   string `json:"address"`
+	Username  string `json:"username"`
+	Password  string `json:"password,omitempty"`
+	Interface string `json:"interface"`
+	Vendor    string `json:"vendor"`
+	CreatedAt string `json:"created_at"`
+	UpdatedAt string `json:"updated_at"`
+}
+
+type PublicIPMINode struct {
+	ID          int64  `json:"id"`
+	ClientID    int64  `json:"client_id"`
+	Name        string `json:"name"`
+	Address     string `json:"address"`
+	Username    string `json:"username"`
+	Interface   string `json:"interface"`
+	Vendor      string `json:"vendor"`
+	HasPassword bool   `json:"has_password"`
+	CreatedAt   string `json:"created_at"`
+	UpdatedAt   string `json:"updated_at"`
+}
+
+func (n IPMINode) Public() PublicIPMINode {
+	return PublicIPMINode{ID: n.ID, ClientID: n.ClientID, Name: n.Name, Address: n.Address, Username: n.Username, Interface: n.Interface, Vendor: n.Vendor, HasPassword: n.Password != "", CreatedAt: n.CreatedAt, UpdatedAt: n.UpdatedAt}
+}
+
 type User struct {
 	ID        int64  `json:"id"`
 	Username  string `json:"username"`
