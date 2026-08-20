@@ -3,12 +3,12 @@
     <section class="card p-5">
       <div class="flex flex-col gap-3 lg:flex-row lg:items-start lg:justify-between">
         <div>
-          <h1 class="text-lg font-semibold">客户端</h1>
-          <p class="mt-1 text-sm text-neutral-500">管理 PXE 客户端、静态绑定、待认领设备和唤醒操作。</p>
+          <h1 class="text-lg font-semibold">设备</h1>
+          <p class="mt-1 text-sm text-neutral-500">统一管理物理机和虚拟机的 PXE MAC、DHCP 当前地址、启动身份与运行状态。</p>
         </div>
         <div class="flex flex-wrap gap-2">
           <button class="btn" :disabled="busy" @click="load">{{ busy ? '刷新中...' : '刷新' }}</button>
-          <button class="btn btn-primary" :disabled="busy" @click="newClient">添加客户端</button>
+          <button class="btn btn-primary" :disabled="busy" @click="newClient">添加设备</button>
         </div>
       </div>
       <div class="mt-4 grid gap-2 lg:grid-cols-[minmax(0,1fr)_10rem_8rem_auto]">
@@ -66,12 +66,12 @@
           </button>
         </div>
 
-        <div v-if="clients.length === 0" class="p-10 text-center text-sm text-neutral-500">暂无客户端。可以手动添加，或通过 DHCP 请求自动发现。</div>
+        <div v-if="clients.length === 0" class="p-10 text-center text-sm text-neutral-500">暂无设备。可以手动添加，也可以等待 DHCP/PXE 自动发现物理机或虚拟机。</div>
       </section>
 
       <aside class="card p-4">
         <div class="flex items-center justify-between gap-3">
-          <h2 class="font-medium">{{ editing.id ? '客户端详情' : '新增客户端' }}</h2>
+          <h2 class="font-medium">{{ editing.id ? '设备详情' : '新增设备' }}</h2>
           <span v-if="selected" class="rounded bg-neutral-100 px-2 py-1 text-xs text-neutral-500">ID {{ selected.id }}</span>
         </div>
         <div class="mt-4 space-y-3">
@@ -173,7 +173,7 @@ async function load() {
 }
 
 async function fetchClients() {
-  const rows = await api<Client[]>('/clients')
+  const rows = await api<Client[]>('/devices')
   clients.value = Array.isArray(rows) ? rows : []
 }
 
@@ -204,16 +204,16 @@ function newClient() {
 async function saveClient() {
   if (!canSave.value) return
   await run(async () => {
-    const path = editing.id ? `/clients/${editing.id}` : '/clients'
+    const path = editing.id ? `/devices/${editing.id}` : '/devices'
     const method = editing.id ? 'PUT' : 'POST'
     const saved = await api<Client>(path, { method, body: JSON.stringify(editing) })
-    message.value = '客户端已保存。'
+    message.value = '设备已保存。'
     await reloadAndSelect(saved.id)
   })
 }
 
 async function reloadAndSelect(id: number) {
-  const rows = await api<Client[]>('/clients')
+  const rows = await api<Client[]>('/devices')
   clients.value = Array.isArray(rows) ? rows : []
   const current = clients.value.find((item) => item.id === id)
   if (current) select(current)
@@ -221,10 +221,10 @@ async function reloadAndSelect(id: number) {
 
 async function batch() {
   if (!canBatch.value) return
-  if (!window.confirm(`确认批量创建 ${batchCount.value} 台待认领客户端？`)) return
+  if (!window.confirm(`确认批量创建 ${batchCount.value} 台待认领设备？`)) return
   await run(async () => {
-    const rows = await api<Client[]>('/clients/batch', { method: 'POST', body: JSON.stringify({ prefix: batchPrefix.value, ip_start: batchIP.value, count: batchCount.value }) })
-    message.value = `已创建 ${Array.isArray(rows) ? rows.length : 0} 台客户端。`
+    const rows = await api<Client[]>('/devices/batch', { method: 'POST', body: JSON.stringify({ prefix: batchPrefix.value, ip_start: batchIP.value, count: batchCount.value }) })
+    message.value = `已创建 ${Array.isArray(rows) ? rows.length : 0} 台设备。`
     await fetchClients()
   })
 }
@@ -233,7 +233,7 @@ async function clearMac(client: Client) {
   if (!client.id || !client.mac) return
   if (!window.confirm(`确认清除 ${client.name} 的 MAC 绑定？`)) return
   await run(async () => {
-    await api(`/clients/${client.id}/clear-mac`, { method: 'POST' })
+    await api(`/devices/${client.id}/clear-mac`, { method: 'POST' })
     message.value = 'MAC 绑定已清除。'
     await reloadAndSelect(client.id)
   })
@@ -244,19 +244,19 @@ type WOLResponse = { sent?: number }
 async function wol(client: Client) {
   if (!client.id || !client.mac) return
   await run(async () => {
-    const res = await api<WOLResponse>(`/clients/${client.id}/wol`, { method: 'POST' })
+    const res = await api<WOLResponse>(`/devices/${client.id}/wol`, { method: 'POST' })
     message.value = `唤醒包已发送${res.sent ? `（${res.sent} 个目标）` : ''}。`
   })
 }
 
 async function remove(client: Client) {
   if (!client.id) return
-  if (!window.confirm(`确认删除客户端 ${client.name}？此操作不可恢复。`)) return
+  if (!window.confirm(`确认删除设备 ${client.name}？关联的控制器不会被删除，但会解除关联。此操作不可恢复。`)) return
   await run(async () => {
-    await api(`/clients/${client.id}`, { method: 'DELETE' })
+    await api(`/devices/${client.id}`, { method: 'DELETE' })
     selected.value = null
     Object.assign(editing, emptyClient())
-    message.value = '客户端已删除。'
+    message.value = '设备已删除。'
     await fetchClients()
   })
 }

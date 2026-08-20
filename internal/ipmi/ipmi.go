@@ -31,6 +31,9 @@ func (r Runner) Run(ctx context.Context, n storage.IPMINode, args ...string) (st
 		if out == "" {
 			out = err.Error()
 		}
+		if n.Interface == "lan" && (strings.Contains(out, "Authentication type NONE not supported") || strings.Contains(out, "Unable to establish IPMI v1.5 / RMCP session")) {
+			return "", fmt.Errorf("IPMI 操作失败: 当前节点使用 lan（IPMI 1.5），但 BMC 不支持该认证方式；请将 IPMI 接口改为 lanplus（IPMI 2.0）后重试。原始错误: %s", out)
+		}
 		return "", fmt.Errorf("IPMI 操作失败: %s", out)
 	}
 	return out, nil

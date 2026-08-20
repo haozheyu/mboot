@@ -33,12 +33,21 @@ func (h *Handler) listIPMINodes(c *gin.Context) {
 	}
 	out := make([]storage.PublicIPMINode, 0, len(rows))
 	for _, n := range rows {
-		out = append(out, n.Public())
+		item := n.Public()
+		if n.ClientID != 0 {
+			if client, err := h.app.Storage().GetClient(c.Request.Context(), n.ClientID); err == nil {
+				item.Client = &client
+			}
+		}
+		out = append(out, item)
 	}
 	OK(c, out)
 }
 
 func validateIPMINode(n *storage.IPMINode) error {
+	if n.ClientID == 0 {
+		n.ClientID = n.LegacyClientID
+	}
 	n.Name = strings.TrimSpace(n.Name)
 	n.Address = strings.TrimSpace(n.Address)
 	n.Username = strings.TrimSpace(n.Username)
@@ -87,6 +96,12 @@ func (h *Handler) saveIPMINode(c *gin.Context) {
 	if n.ID == 0 && n.Password == "" {
 		Fail(c, 400, "VALIDATION_ERROR", "新节点必须填写密码")
 		return
+	}
+	if n.ClientID != 0 {
+		if _, e := h.app.Storage().GetClient(c.Request.Context(), n.ClientID); e != nil {
+			Fail(c, 400, "VALIDATION_ERROR", "关联的 DHCP/PXE 客户端不存在")
+			return
+		}
 	}
 	saved, e := h.app.Storage().SaveIPMINode(c, n)
 	if e != nil {
@@ -150,10 +165,15 @@ func (h *Handler) probeIPMINode(c *gin.Context) {
 }
 func (h *Handler) ipmiPower(c *gin.Context) {
 	var req struct {
-		Action string `json:"action"`
+		Action  string `json:"action"`
+		Confirm bool   `json:"confirm"`
 	}
 	if c.ShouldBindJSON(&req) != nil {
 		Fail(c, 400, "VALIDATION_ERROR", "请求格式错误")
+		return
+	}
+	if req.Action != "status" && !req.Confirm {
+		Fail(c, http.StatusConflict, "IPMI_CONFIRM_REQUIRED", "电源操作需要显式确认")
 		return
 	}
 	a, e := ipmi.PowerArgs(req.Action)
@@ -171,13 +191,37 @@ func (h *Handler) ipmiPower(c *gin.Context) {
 func (h *Handler) ipmiBoot(c *gin.Context) {
 	var req struct {
 		Device      string `json:"device"`
+		BootMode    string `json:"boot_mode"`
 		Persistent  bool   `json:"persistent"`
 		UEFI        bool   `json:"uefi"`
 		PowerAction string `json:"power_action"`
+		Confirm     bool   `json:"confirm"`
 	}
 	if c.ShouldBindJSON(&req) != nil {
 		Fail(c, 400, "VALIDATION_ERROR", "请求格式错误")
 		return
+	}
+	if !req.Confirm {
+		Fail(c, http.StatusConflict, "IPMI_CONFIRM_REQUIRED", "设置启动设备需要显式确认")
+		return
+	}
+	if req.Persistent {
+		Fail(c, 400, "VALIDATION_ERROR", "当前仅允许设置一次性启动设备，不允许通过此接口修改持久启动顺序")
+		return
+	}
+	if req.PowerAction != "" {
+		Fail(c, 400, "VALIDATION_ERROR", "设置启动设备不会自动执行电源操作，请单独确认电源操作")
+		return
+	}
+	// boot_mode is required by the generic controller API because omitting the
+	// efiboot bit means Legacy, not "keep the current firmware mode". UEFI is
+	// retained as a compatibility field for the legacy /ipmi/nodes API.
+	if strings.HasPrefix(c.FullPath(), "/api/v1/controllers") {
+		if req.BootMode != "legacy" && req.BootMode != "uefi" {
+			Fail(c, 400, "VALIDATION_ERROR", "必须明确选择 legacy 或 uefi 启动模式")
+			return
+		}
+		req.UEFI = req.BootMode == "uefi"
 	}
 	a, e := ipmi.BootArgs(req.Device, req.Persistent, req.UEFI)
 	if e != nil {
@@ -188,20 +232,8 @@ func (h *Handler) ipmiBoot(c *gin.Context) {
 	if !ok {
 		return
 	}
-	if req.PowerAction != "" {
-		pa, e := ipmi.PowerArgs(req.PowerAction)
-		if e != nil {
-			Fail(c, 400, "VALIDATION_ERROR", e.Error())
-			return
-		}
-		var ok2 bool
-		_, _, ok2 = h.runIPMI(c, pa)
-		if !ok2 {
-			return
-		}
-	}
 	h.app.EventHub().Publish("info", "ipmi", n.Name+" 设置启动目标: "+req.Device)
-	OK(c, gin.H{"device": req.Device, "output": out, "power_action": req.PowerAction})
+	OK(c, gin.H{"device": req.Device, "output": out, "persistent": false, "power_action": ""})
 }
 func (h *Handler) ipmiBIOS(c *gin.Context) {
 	a, _ := ipmi.BIOSArgs("5")

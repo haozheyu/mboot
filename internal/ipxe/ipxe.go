@@ -3,6 +3,7 @@ package ipxe
 import (
 	"context"
 	"fmt"
+	"net"
 	"net/url"
 	"path"
 	"path/filepath"
@@ -26,6 +27,13 @@ type Generator struct {
 func (g Generator) Generate(ctx context.Context, req Request) string {
 	httpURI := g.httpURI()
 	bootfile := strings.Trim(req.Params.Get("bootfile"), "\" ")
+	// In ProxyDHCP mode the external DHCP server owns the lease, so mboot may
+	// only learn the current client IP when iPXE calls back over HTTP.
+	if mac := req.Params.Get("mymac"); mac != "" && req.Params.Get("myip") == "" {
+		if _, err := net.ParseMAC(mac); err == nil && net.ParseIP(req.ClientIP) != nil {
+			g.Store.UpsertClientSeen(ctx, mac, req.ClientIP, "ipxe", "ipxe")
+		}
+	}
 	if req.Params.Get("myip") != "" && req.Params.Get("mymac") != "" {
 		ip := req.Params.Get("myip")
 		mac := req.Params.Get("mymac")

@@ -101,33 +101,38 @@ type Client struct {
 // management controller. Password is accepted on writes but never returned by
 // the HTTP API (see PublicIPMINode).
 type IPMINode struct {
-	ID        int64  `json:"id"`
-	ClientID  int64  `json:"client_id"`
-	Name      string `json:"name"`
-	Address   string `json:"address"`
-	Username  string `json:"username"`
-	Password  string `json:"password,omitempty"`
-	Interface string `json:"interface"`
-	Vendor    string `json:"vendor"`
-	CreatedAt string `json:"created_at"`
-	UpdatedAt string `json:"updated_at"`
+	ID       int64 `json:"id"`
+	ClientID int64 `json:"device_id"`
+	// LegacyClientID keeps old /ipmi/nodes write payloads compatible.
+	LegacyClientID int64  `json:"client_id,omitempty"`
+	Name           string `json:"name"`
+	Address        string `json:"address"`
+	Username       string `json:"username"`
+	Password       string `json:"password,omitempty"`
+	Interface      string `json:"interface"`
+	Vendor         string `json:"vendor"`
+	CreatedAt      string `json:"created_at"`
+	UpdatedAt      string `json:"updated_at"`
 }
 
 type PublicIPMINode struct {
-	ID          int64  `json:"id"`
-	ClientID    int64  `json:"client_id"`
-	Name        string `json:"name"`
-	Address     string `json:"address"`
-	Username    string `json:"username"`
-	Interface   string `json:"interface"`
-	Vendor      string `json:"vendor"`
-	HasPassword bool   `json:"has_password"`
-	CreatedAt   string `json:"created_at"`
-	UpdatedAt   string `json:"updated_at"`
+	ID          int64   `json:"id"`
+	Type        string  `json:"type"`
+	DeviceID    int64   `json:"device_id"`
+	ClientID    int64   `json:"client_id,omitempty"`
+	Name        string  `json:"name"`
+	Address     string  `json:"address"`
+	Username    string  `json:"username"`
+	Interface   string  `json:"interface"`
+	Vendor      string  `json:"vendor"`
+	HasPassword bool    `json:"has_password"`
+	CreatedAt   string  `json:"created_at"`
+	UpdatedAt   string  `json:"updated_at"`
+	Client      *Client `json:"client,omitempty"`
 }
 
 func (n IPMINode) Public() PublicIPMINode {
-	return PublicIPMINode{ID: n.ID, ClientID: n.ClientID, Name: n.Name, Address: n.Address, Username: n.Username, Interface: n.Interface, Vendor: n.Vendor, HasPassword: n.Password != "", CreatedAt: n.CreatedAt, UpdatedAt: n.UpdatedAt}
+	return PublicIPMINode{ID: n.ID, Type: "ipmi", DeviceID: n.ClientID, ClientID: n.ClientID, Name: n.Name, Address: n.Address, Username: n.Username, Interface: n.Interface, Vendor: n.Vendor, HasPassword: n.Password != "", CreatedAt: n.CreatedAt, UpdatedAt: n.UpdatedAt}
 }
 
 type User struct {

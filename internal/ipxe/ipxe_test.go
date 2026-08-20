@@ -83,6 +83,39 @@ func TestGenerateShowInfoScriptReturnsToMenu(t *testing.T) {
 	}
 }
 
+func TestGenerateRecordsIPXECallbackAddressByMAC(t *testing.T) {
+	ctx := context.Background()
+	store, settings := testStoreAndSettings(t, ctx)
+	mac := "52:54:00:12:34:56"
+	Generator{Settings: settings, Store: store}.Generate(ctx, Request{
+		Params:   url.Values{"bootfile": {"ipxemenu"}, "mymac": {mac}},
+		ClientIP: "192.168.1.88",
+	})
+	clients, err := store.ListClients(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(clients) != 1 || clients[0].MAC != storage.NormalizeMAC(mac) || clients[0].IP != "192.168.1.88" {
+		t.Fatalf("expected callback to record dynamic client address, got %+v", clients)
+	}
+}
+
+func TestGenerateIgnoresInvalidAutomaticIdentity(t *testing.T) {
+	ctx := context.Background()
+	store, settings := testStoreAndSettings(t, ctx)
+	Generator{Settings: settings, Store: store}.Generate(ctx, Request{
+		Params:   url.Values{"bootfile": {"ipxemenu"}, "mymac": {"not-a-mac"}},
+		ClientIP: "192.168.1.88",
+	})
+	clients, err := store.ListClients(ctx)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(clients) != 0 {
+		t.Fatalf("invalid callback identity must not create a device, got %+v", clients)
+	}
+}
+
 func testStoreAndSettings(t *testing.T, ctx context.Context) (*storage.Store, storage.ServiceSettings) {
 	t.Helper()
 	dir := t.TempDir()

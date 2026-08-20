@@ -84,6 +84,14 @@ func NewRouter(app Backend) http.Handler {
 	protected.DELETE("/clients/:id", h.deleteClient)
 	protected.POST("/clients/:id/wol", h.wol)
 	protected.POST("/clients/:id/clear-mac", h.clearClientMAC)
+	// Device is the domain name; /clients remains as a compatibility alias.
+	protected.GET("/devices", h.listClients)
+	protected.POST("/devices", h.saveClient)
+	protected.POST("/devices/batch", h.batchClients)
+	protected.PUT("/devices/:id", h.saveClient)
+	protected.DELETE("/devices/:id", h.deleteClient)
+	protected.POST("/devices/:id/wol", h.wol)
+	protected.POST("/devices/:id/clear-mac", h.clearClientMAC)
 	protected.GET("/menus", h.listMenus)
 	protected.PUT("/menus", h.saveMenus)
 	protected.GET("/actions", h.listActions)
@@ -114,6 +122,16 @@ func NewRouter(app Backend) http.Handler {
 	protected.POST("/ipmi/nodes/:id/power", h.ipmiPower)
 	protected.POST("/ipmi/nodes/:id/boot", h.ipmiBoot)
 	protected.GET("/ipmi/nodes/:id/bios", h.ipmiBIOS)
+	// Generic controller routes currently dispatch to the IPMI adapter. The
+	// legacy /ipmi/nodes routes remain available for API compatibility.
+	protected.GET("/controllers", h.listIPMINodes)
+	protected.POST("/controllers", h.saveIPMINode)
+	protected.PUT("/controllers/:id", h.saveIPMINode)
+	protected.DELETE("/controllers/:id", h.deleteIPMINode)
+	protected.POST("/controllers/:id/probe", h.probeIPMINode)
+	protected.POST("/controllers/:id/power", h.ipmiPower)
+	protected.POST("/controllers/:id/boot", h.ipmiBoot)
+	protected.GET("/controllers/:id/bios", h.ipmiBIOS)
 
 	r.GET("/dynamic.ipxe", h.dynamicProxy)
 	r.HEAD("/dynamic.ipxe", h.dynamicProxy)

@@ -217,7 +217,7 @@ func virtualIPXEScript(settings storage.ServiceSettings, name string) (string, b
 	server := settings.Server.AdvertiseIP
 	return fmt.Sprintf(`#!ipxe
 isset ${net0/ip} || dhcp || goto failed
-chain %s/dynamic.ipxe?bootfile=ipxemenu || goto tftp_fallback
+chain %s/dynamic.ipxe?bootfile=ipxemenu&mymac=${net0/mac:uristring} || goto tftp_fallback
 
 :tftp_fallback
 echo HTTP boot is unavailable, trying TFTP netboot.xyz

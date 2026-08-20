@@ -651,8 +651,8 @@ const nav = [
     icon: Settings
   },
   {
-    path: '/clients',
-    name: '客户端',
+    path: '/devices',
+    name: '设备',
     icon: Network
   },
   {
@@ -676,8 +676,8 @@ const nav = [
     icon: TerminalSquare
   },
   {
-    path: '/ipmi',
-    name: 'IPMI 带外管理',
+    path: '/controllers',
+    name: '控制器',
     icon: Cpu
   },
   {

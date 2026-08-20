@@ -20,12 +20,14 @@ const router = createRouter({
   routes: [
     { path: '/', component: Dashboard },
     { path: '/config', component: ConfigPage },
-    { path: '/clients', component: ClientsPage },
+    { path: '/devices', component: ClientsPage },
+    { path: '/clients', redirect: '/devices' },
     { path: '/menus', component: MenusPage },
     { path: '/files', component: FilesPage },
     { path: '/netboot', component: NetbootPage },
     { path: '/actions', component: ActionsPage },
-    { path: '/ipmi', component: IPMIPage },
+    { path: '/controllers', component: IPMIPage },
+    { path: '/ipmi', redirect: '/controllers' },
     { path: '/users', component: UsersPage },
     { path: '/logs', component: LogsPage },
     { path: '/diagnostics', component: DiagnosticsPage }

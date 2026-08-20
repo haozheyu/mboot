@@ -1,5 +1,14 @@
 # IPMI 集成说明
 
+## 设备与控制器
+
+mboot 将资源拆成两个相互独立的层次：
+
+- **设备（Device）**：物理机和虚拟机共用的数据模型，保存 PXE 网卡 MAC、DHCP 当前 IP、固件类型、状态和启动记录。设备不要求具备 BMC。
+- **控制器（Controller）**：通过 `device_id` 关联设备，负责电源和启动控制。当前适配器为 `ipmi`；VMware、Proxmox、libvirt 和 Hyper-V 应作为并列适配器接入。
+
+兼容路由 `/api/v1/clients` 与 `/api/v1/ipmi/nodes` 保留；新的领域路由为 `/api/v1/devices` 和 `/api/v1/controllers`。
+
 ## 能力边界
 
 本项目把裸金属管理拆成 PXE 数据面和 IPMI 带外控制面。当前 IPMI 控制面负责：
